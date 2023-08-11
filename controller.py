@@ -1,10 +1,20 @@
 from sklearn.feature_extraction.text import TfidfVectorizer
 import os
+import json
 import pickle as pkl
 import pandas as pd
 from matplotlib import pyplot as plt
 from wordcloud import WordCloud, STOPWORDS
 stopwords = set(STOPWORDS)
+
+
+try:
+    with open ('config_file.json', 'r') as file:
+        config = json.load(file)
+except (FileNotFoundError, json.JSONDecodeError) as e:
+        print("Error loading configuration:", e)
+        config = {}
+model_base_path = config['output_model_path']
 
 def download_given_data(given_data):
     try:
@@ -17,20 +27,17 @@ def download_given_data(given_data):
 
 
 def get_sentiment(df):
-    with open("vectorizer.pkl", 'rb') as fv:
+    with open(os.path.join(model_base_path, "vectorizer.pkl"), 'rb') as fv:
         tfidf_vectorizer = pkl.load(fv)
     vectorized_txt = tfidf_vectorizer.transform(df['reviews'])
 
-    with open('model.pkl', 'rb') as fm:
+    with open(os.path.join(model_base_path, 'model.pkl'), 'rb') as fm:
         model = pkl.load(fm)
     sentmt = model.predict(vectorized_txt)
     return sentmt
 
-def plot_wrdCloud(df, pos):
-    list_asins = df['asins'].unique()
-
-    curr_asin = list_asins[pos]
-    filtered_product = df[df['asins']==curr_asin]
+def plot_wrdCloud(df, selected_asin):    
+    filtered_product = df[df['asins']==selected_asin]
     concat_words = filtered_product['reviews'].str.cat(sep=' ')
 
     tokens = concat_words.split()
